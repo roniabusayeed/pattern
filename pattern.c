@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <stdbool.h>
 
 
 /**
@@ -21,20 +22,42 @@ char* readline(FILE* stream);
 int strindex(const char* line, const char* pattern);
 
 
-int main(const int argc, const char* argv[])
+/**
+ * Prints lines file  that contains a pattern
+ */
+int main(int argc, char* argv[])
 {
+	// Read optional arguments
+	bool except = false;	// Show lines that doesn't contain the pattern.
+	bool number = false;	// Show lines preceded by its line number.
+	int c;
+	while (--argc > 0 && (*++argv)[0] == '-')
+		while ((c = *++argv[0]))
+			switch (c) {
+			case 'x':
+				except = true;
+				break;
+			case 'n':
+				number = true;
+				break;
+			default:
+				printf("pattern: illegal option %c\n", c);
+				argc = 0;
+				break;
+			}
+
 	// Ensure proper usage
-	if (argc != 3) 
+	if (argc != 2) 
 	{
-		printf("Usage: %s <file> <pattern string>\n", argv[0]);
+		printf("Usage: %s [-x -n] <file> <pattern string>\n", argv[0]);
 		return 1;
 	}
 
 	// Remember filename
-	const char* infile = argv[1];
+	const char* infile = argv[0];
 
 	// Remember pattern
-	const char* pattern = argv[2];
+	const char* pattern = argv[1];
 
 	// Open file for reading
 	FILE* inptr = fopen(infile, "r");
