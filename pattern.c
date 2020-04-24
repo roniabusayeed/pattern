@@ -10,11 +10,11 @@
  * the buffer containing the text. The buffer is null-terminated
  * and includes the newline character if one was found.
  * Returns NULL on failure to read a line (including end of file
- * condition).
- * The buffer is heap allocated and the caller function is expected
- * to free the memory.
+ * condition). Sets *line_number to line number of the line in stream.
+ * The buffer is heap allocated and the caller function is should
+ * to free the memory to avoid memory leak.
  */
-char* readline(FILE* stream);
+char* readline(FILE* stream, int* line_number);
 
 /**
  * Returns index of pattern in line; -1 if none.
@@ -69,10 +69,30 @@ int main(int argc, char* argv[])
 	
 	// Iterate over each of the file and print it if it holds the pattern.
 	char* line;
-	while ((line = readline(inptr)) != NULL)
+	int line_number;
+	while ((line = readline(inptr, &line_number)) != NULL)
 	{
-		if (strindex(line, pattern) != -1)
-			printf("%s", line);
+		bool found = strindex(line, pattern) != -1;
+		if (except)
+		{
+			// Print those lines where pattern is not found.
+			if (!found)
+			{
+				if (number)
+					printf("%4d ", line_number);
+				printf("%s", line);
+			}
+		}
+		else
+		{
+			// Print those line where pattern is found.
+			if(found)
+			{
+				if (number)
+					printf("%4d ", line_number);
+				printf("%s", line);
+			}
+		}
 
 		// Free buffer
 		free(line);
@@ -86,14 +106,17 @@ int main(int argc, char* argv[])
 }
 
 
-char* readline(FILE* stream)
+char* readline(FILE* stream, int* line_number)
 {
+	static int s_line_number = 1;
+
 	const size_t init_capacity = 10;
 	char* line = malloc(sizeof(char) * init_capacity);
 	// Guard against insufficient memory.
 	if (!line)
 	{
 		printf("Insufficient memory\n");
+		*line_number = -1;
 		return NULL;
 	}
 	const float increment_factor = 1.25f;	
@@ -111,6 +134,7 @@ char* readline(FILE* stream)
 			if (!line)
 			{
 				printf("Insufficient memory\n");
+				*line_number = -1;
 				return NULL;
 			}
 		}
@@ -124,11 +148,13 @@ char* readline(FILE* stream)
 	if (size)
 	{
 		line[size] = 0;
+		*line_number = s_line_number++;
 		return line;
 	}
 	
 	// Characters are not in buffer. So, free memory and return NULL.	
 	free(line);
+	*line_number = -1;
 	return NULL;	
 }
 
